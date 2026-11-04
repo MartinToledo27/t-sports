@@ -1,0 +1,33 @@
+name: Actualizar F1
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/30 * * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: actualizar-f1
+  cancel-in-progress: false
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Bajar y armar datos
+        working-directory: f1
+        run: python3 actualizar.py
+
+      - name: Guardar si hay cambios
+        run: |
+          git config user.name "robot-agenda"
+          git config user.email "robot-agenda@users.noreply.github.com"
+          git add f1/data.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Actualizar datos F1"
+            for i in 1 2 3; do git pull --rebase origin main && git push && break || sleep 5; done
+          fi

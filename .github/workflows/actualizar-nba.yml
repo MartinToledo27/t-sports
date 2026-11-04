@@ -1,15 +1,16 @@
-name: Actualizar F1
+name: Actualizar NBA
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '*/15 * * * *'
+    - cron: '0 8 * * *'
 
 permissions:
   contents: write
 
 concurrency:
-  group: actualizar-f1
+  group: actualizar-nba
   cancel-in-progress: false
 
 jobs:
@@ -19,15 +20,18 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Bajar y armar datos
-        working-directory: f1
-        run: python3 actualizar.py
+        working-directory: nba
+        run: |
+          MODO=rapido
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.event.schedule }}" = "0 8 * * *" ]; then MODO=completo; fi
+          python3 actualizar.py $MODO
 
       - name: Guardar si hay cambios
         run: |
           git config user.name "robot-agenda"
           git config user.email "robot-agenda@users.noreply.github.com"
-          git add f1/data.json
+          git add nba/data.json
           if ! git diff --cached --quiet; then
-            git commit -m "Actualizar datos F1"
+            git commit -m "Actualizar datos NBA"
             for i in 1 2 3; do git pull --rebase origin main && git push && break || sleep 5; done
           fi

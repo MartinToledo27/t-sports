@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>T-Sports</title>
+<link rel="icon" type="image/png" href="icono.png">
+<link rel="apple-touch-icon" href="icono.png">
+<meta name="theme-color" content="#3b3634">
+<style>
+:root{--bg:#F5F4F2;--sf:#fff;--ink:#111;--mute:#5F5F5B;--line:#E0DED8;--ch:#3b3634;--nba:#F26B1D;--f1:#E10600}
+@media(prefers-color-scheme:dark){:root{--bg:#0D0D0E;--sf:#18181A;--ink:#F4F3F0;--mute:#A5A49E;--line:#2D2D30}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font:700 17px/1 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;-webkit-text-size-adjust:100%}
+.top{background:var(--ch);padding-top:env(safe-area-inset-top,0px)}
+.top div{max-width:560px;margin:0 auto;padding:6px 12px}
+.top img{display:block;height:46px;width:auto;max-width:100%}
+.sel{display:flex;max-width:560px;width:100%;margin:0 auto;border-bottom:1px solid var(--line);background:var(--bg)}
+.sel button{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;background:none;border:0;border-bottom:4px solid transparent;color:var(--mute);font:inherit;padding:14px 4px 11px;cursor:pointer}
+.sel button i{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.sel button[aria-selected="true"]{color:var(--ink);border-image:linear-gradient(90deg,#5e8800,#8cd700,#2d9725) 1}
+.sel button:focus-visible{outline:2px solid #8cd700;outline-offset:-2px}
+main{flex:1;min-height:0;display:flex}
+iframe{flex:1;width:100%;border:0;background:var(--bg);color-scheme:light dark}
+iframe[hidden]{display:none}
+</style>
+</head>
+<body>
+<div class="top"><div><img src="logo.svg" alt="T-Sports"></div></div>
+<nav class="sel" role="tablist" aria-label="Deporte">
+  <button role="tab" data-k="nba" style="--c:var(--nba)"><i></i>NBA</button>
+  <button role="tab" data-k="f1" style="--c:var(--f1)"><i></i>F1</button>
+</nav>
+<main>
+  <iframe id="fr-nba" title="Agenda NBA" data-src="nba/" hidden></iframe>
+  <iframe id="fr-f1" title="Agenda F1" data-src="f1/" hidden></iframe>
+</main>
+<script>
+const KS=['nba','f1'];
+function inicial(){
+  let k=(location.hash||'').slice(1);
+  if(!KS.includes(k)){try{k=localStorage.getItem('tsport_deporte')}catch(e){}}
+  return KS.includes(k)?k:'nba';
+}
+function show(k){
+  for(const id of KS){
+    const f=document.getElementById('fr-'+id);
+    if(id===k&&!f.getAttribute('src'))f.src=f.dataset.src;
+    f.hidden=id!==k;
+  }
+  document.querySelectorAll('.sel button').forEach(b=>b.setAttribute('aria-selected',b.dataset.k===k));
+  try{localStorage.setItem('tsport_deporte',k)}catch(e){}
+  try{history.replaceState(null,'','#'+k)}catch(e){}
+}
+document.querySelectorAll('.sel button').forEach(b=>b.addEventListener('click',()=>show(b.dataset.k)));
+addEventListener('hashchange',()=>{const k=location.hash.slice(1);if(KS.includes(k))show(k)});
+show(inicial());
+</script>
+</body>
+</html>

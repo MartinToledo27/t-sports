@@ -165,6 +165,45 @@ header svg{flex:none}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,600;0,700;0,800;1,700;1,800&family=Barlow:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="../tema.css?v=2">
+<style>
+.gt{position:relative;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.gt::after{content:'';position:absolute;right:12px;bottom:7px;width:6px;height:6px;border:solid var(--mute);border-width:0 2px 2px 0;transform:rotate(45deg);opacity:.6;transition:transform .2s,bottom .2s}
+.gw.open>.gt::after{transform:rotate(-135deg);bottom:4px}
+.gt:focus-visible{outline:2px solid #8cd700;outline-offset:2px;border-radius:10px}
+.gw.open>.gt>.game,.gw.open>.gt>.big{margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0}
+.gd{background:var(--surface);border:1px solid var(--line);border-top:0;border-radius:0 0 12px 12px;padding:8px 10px 12px;margin-bottom:10px}
+.gw-cr.open .gd{border-top:1px solid var(--line);border-radius:10px;margin:6px 0 10px}
+.gl{font-size:13px;color:var(--mute);padding:10px 0}
+.gq{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+.gq th,.gq td{padding:5px 4px;text-align:center}
+.gq th:first-child,.gq td:first-child{text-align:left;white-space:nowrap}
+.gq thead th{color:var(--mute);font:700 12px/1 var(--fd);letter-spacing:.04em}
+.gq td b{font-family:var(--fd);font-size:15px;letter-spacing:.02em}
+.gq .tt{font:800 18px/1 var(--fd)}
+.gsel{display:flex;gap:6px;margin:12px 0 8px}
+.gsel button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 6px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--mute);font:800 italic 14px/1 var(--fd);text-transform:uppercase;letter-spacing:.03em;cursor:pointer}
+.gsel button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.gtb{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px}
+.gp{border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;min-width:100%}
+.gp th,.gp td{padding:6px 5px;text-align:center;white-space:nowrap}
+.gp thead th{color:var(--mute);font:700 12px/1 var(--fd);letter-spacing:.04em}
+.gp th:first-child{position:sticky;left:0;background:var(--surface);text-align:left;min-width:112px;padding-left:4px}
+.gp tbody th,.gp tfoot th{font-weight:600}
+.gp small{margin-left:5px;font-size:11px;font-weight:500;color:var(--mute)}
+.gp tbody tr{border-bottom:1px solid var(--line)}
+.gp tr.top th,.gp tr.top td{font-weight:800}
+.gp tr.sep th{position:static;background:none;color:var(--mute);font:700 12px/1 var(--fd);letter-spacing:.06em;text-transform:uppercase;text-align:left;padding:10px 4px 4px}
+.gp tr.sep{border-bottom:0}
+.gp tfoot th,.gp tfoot td{border-top:2px solid var(--line);font-weight:700}
+.gdnp{font-size:12px;color:var(--mute);margin-top:8px}
+.gcmp{margin-top:14px}
+.gcmp .r{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px;font-variant-numeric:tabular-nums}
+.gcmp .r span:first-child{text-align:left}
+.gcmp .r span:last-child{text-align:right}
+.gcmp .r em{font-style:normal;color:var(--mute);font-size:12px;align-self:center}
+.gcmp .r.hd{font:800 15px/1 var(--fd);border-bottom:2px solid var(--line)}
+.gcmp .w{font-weight:800}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -256,13 +295,13 @@ const COL={ATL:['#E03A3E','#C1D32F'],BOS:['#007A33','#BA9653'],BKN:['#111111','#
 const fxs=g=>{const fa=favs.has(g.a),fh=favs.has(g.h);
   const c=t=>{const k=COL[t]||['#888','#ccc'];return `--c1:${k[0]};--c2:${k[1]}`};
   return fa&&fh?`<i class="fx a"><b style="${c(g.a)}"></b></i><i class="fx h"><b style="${c(g.h)}"></b></i>`:`<i class="fx"><b style="${c(fa?g.a:g.h)}"></b></i>`};
-function big(g){
+function big0(g){
   const live=g.st==='live',wa=!live&&g.sa>g.sh,wh=!live&&g.sh>g.sa;
   const side=(t,v,w,l)=>`<div class="side${w?' win':''}${l?' lose':''}">${bd(t,56)}<span>${NAME[t]}</span><span class="sc">${v}</span>${w?'<span class="wp">Ganó</span>':''}</div>`;
   const inner=`<div class="bg">${side(g.a,g.sa,wa,wh)}<div class="mid${live?' live':''}">${live?'<span class="dot"></span>En vivo':'Final'}</div>${side(g.h,g.sh,wh,wa)}</div><div class="foot"><span>${live?g.clk:dayLabel(key(g.t))+' '+hhmm(g.t)}</span><span class="tag ${g.p}">${PLAT[g.p]}</span></div>`;
   return isFav(g)?`<div class="big fav">${fxs(g)}<div class="gi">${inner}</div></div>`:`<div class="big">${inner}</div>`;
 }
-function cr(g){
+function cr0(g){
   const wa=g.sa>g.sh;
   const t=(a,v,w)=>`<span class="t${w?'':' l'}">${bd(a,22)}${a}<b>${v}</b></span>`;
   return `<div class="cr"><span class="dt">${g.t.toLocaleDateString('es-AR',{day:'numeric',month:'numeric',timeZone:TZ})}</span>${t(g.a,g.sa,wa)}${t(g.h,g.sh,!wa)}</div>`;
@@ -295,7 +334,7 @@ function group(list,desc){
   list.forEach(g=>{const k=key(g.t);if(!m.has(k))m.set(k,[]);m.get(k).push(g)});
   return [...m.entries()].sort((a,b)=>desc?b[0].localeCompare(a[0]):a[0].localeCompare(b[0]));
 }
-function row(g){
+function row0(g){
   const live=g.st==='live',fin=g.st==='final';
   const star=()=>'';
   const wa=fin&&g.sa>g.sh,wh=fin&&g.sh>g.sa;
@@ -355,7 +394,11 @@ function render(){
   }else if(S.tab==='resultados'){
     h=results();
   }else h=standings();
+  const SK={},af=document.activeElement,fid=af&&af.classList&&af.classList.contains('gt')?af.dataset.gid:null;
+  document.querySelectorAll('.gtb[data-sk]').forEach(el=>SK[el.dataset.sk]=el.scrollLeft);
   $('main').innerHTML=listo?h:'<div class="empty">Cargando…</div>';
+  document.querySelectorAll('.gtb[data-sk]').forEach(el=>{el.scrollLeft=SK[el.dataset.sk]||0});
+  if(fid){const el=document.querySelector('.gt[data-gid="'+fid+'"]');if(el)el.focus({preventScroll:true})}
 }
 $('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.tab=b.dataset.tab;render()});
 $('ctrl').addEventListener('click',e=>{const b=e.target.closest('.pc');if(!b)return;const q=b.dataset.p;PL.has(q)?PL.delete(q):PL.add(q);savePL();render()});
@@ -368,6 +411,103 @@ $('bTeams').onclick=()=>{S.panel=!S.panel;render()};
 $('panel').addEventListener('click',e=>{const b=e.target.closest('[data-t]');if(!b)return;
   const t=b.dataset.t;favs.has(t)?favs.delete(t):favs.add(t);
   saveFavs();render()});
+/* ===== Detalle del partido (box score de ESPN) ===== */
+const ESB='https://site.api.espn.com/apis/site/v2/sports/basketball/nba';
+const GDET={},GSEL={},GOPEN=new Set();
+let GBOX={};try{GBOX=JSON.parse(localStorage.getItem('nba_box')||'{}')}catch(e){}
+const gbSave=()=>{const ks=Object.keys(GBOX);if(ks.length>30)ks.slice(0,ks.length-30).forEach(k=>delete GBOX[k]);try{localStorage.setItem('nba_box',JSON.stringify(GBOX))}catch(e){}};
+function gwrap(g,html,kind){
+  if(g.st!=='final'&&g.st!=='live')return html;
+  const o=GOPEN.has(g.id);
+  return `<div class="gw${kind?' '+kind:''}${o?' open':''}"><div class="gt" data-gid="${g.id}" role="button" tabindex="0" aria-expanded="${o}">${html}</div>${o?gdet(g):''}</div>`;
+}
+const big=g=>gwrap(g,big0(g)),cr=g=>gwrap(g,cr0(g),'gw-cr'),row=g=>gwrap(g,row0(g));
+function gparse(j,g){
+  const bs=j.boxscore||{},side={};
+  const D={st:g.st,ts:{a:{},h:{}},p:{a:null,h:null},q:{a:[],h:[]},venue:''};
+  (bs.teams||[]).forEach(t=>{const k=t.homeAway==='home'?'h':'a';side[t.team.id]=k;(t.statistics||[]).forEach(s=>{D.ts[k][s.name]=s.displayValue})});
+  (bs.players||[]).forEach(t=>{
+    const k=side[t.team.id],s=(t.statistics||[])[0];if(!k||!s)return;
+    D.p[k]={names:s.names||s.labels||[],tot:s.totals||[],rows:(s.athletes||[]).map(a=>({
+      n:(a.athlete&&(a.athlete.shortName||a.athlete.displayName))||'?',
+      pos:(a.athlete&&a.athlete.position&&a.athlete.position.abbreviation)||'',
+      s:a.starter?1:0,d:(a.didNotPlay||!(a.stats||[]).length)?1:0,v:a.stats||[]}))};
+  });
+  const cs=((((j.header||{}).competitions||[])[0])||{}).competitors||[];
+  cs.forEach(x=>{D.q[x.homeAway==='home'?'h':'a']=(x.linescores||[]).map(l=>l.displayValue)});
+  D.venue=((j.gameInfo||{}).venue||{}).fullName||'';
+  return D;
+}
+async function gload(g,force){
+  const id=g.id,c=GDET[id];
+  if(c&&c.busy)return;
+  if(!force&&c&&c.D&&c.D.st==='final'&&g.st==='final')return;
+  if(!c&&g.st==='final'&&GBOX[id]){GDET[id]={D:GBOX[id]};render();return}
+  GDET[id]={D:c?c.D:null,busy:true};
+  if(!c)render();
+  try{
+    const r=await fetch(`${ESB}/summary?event=${id}`);if(!r.ok)throw 0;
+    const D=gparse(await r.json(),g);
+    GDET[id]={D};
+    if(g.st==='final'&&D.p.a&&D.p.h){GBOX[id]=D;gbSave()}
+  }catch(e){GDET[id]={D:c?c.D:null,err:true}}
+  render();
+}
+function refrescaDet(){
+  GOPEN.forEach(id=>{
+    const g=GAMES.find(x=>x.id===id),c=GDET[id];
+    if(g&&(g.st==='live'||g.st==='final')&&(!c||!c.D||c.D.st!==g.st||g.st==='live'))gload(g,true);
+  });
+}
+function gtoggle(id){
+  if(GOPEN.has(id))GOPEN.delete(id);
+  else{GOPEN.add(id);const g=GAMES.find(x=>x.id===id);if(g)gload(g)}
+  render();
+}
+const GQ=i=>i<4?'C'+(i+1):'PR'+(i>4?i-3:'');
+const GCMP=[['Tiros de campo','fieldGoalsMade-fieldGoalsAttempted','fieldGoalPct'],['Triples','threePointFieldGoalsMade-threePointFieldGoalsAttempted','threePointFieldGoalPct'],['Tiros libres','freeThrowsMade-freeThrowsAttempted','freeThrowPct'],['Rebotes','totalRebounds'],['Asistencias','assists'],['Robos','steals'],['Tapas','blocks'],['Pérdidas','turnovers',null,1],['Puntos en la pintura','pointsInPaint'],['Contraataque','fastBreakPoints'],['Mayor ventaja','largestLead']];
+function gdet(g){
+  const c=GDET[g.id];
+  if(!c||!c.D)return c&&c.err?`<div class="gd"><div class="gl">No se pudo cargar el detalle. <button class="chip" data-gretry="${g.id}">Reintentar</button></div></div>`:'<div class="gd"><div class="gl">Cargando estadísticas…</div></div>';
+  const D=c.D,k=GSEL[g.id]||'a',n=Math.max(D.q.a.length,D.q.h.length);
+  let q='';
+  if(n){
+    const rw=t=>`<tr><td>${bd(g[t],18)} <b>${g[t]}</b></td>${Array.from({length:n},(_,i)=>`<td>${D.q[t][i]!=null?D.q[t][i]:'–'}</td>`).join('')}<td class="tt">${t==='a'?g.sa:g.sh}</td></tr>`;
+    q=`<table class="gq"><thead><tr><th></th>${Array.from({length:n},(_,i)=>`<th>${GQ(i)}</th>`).join('')}<th>T</th></tr></thead><tbody>${rw('a')}${rw('h')}</tbody></table>`;
+  }
+  const tabs=`<div class="gsel" role="group" aria-label="Plantel">${['a','h'].map(t=>`<button data-gsel="${t}" data-gid="${g.id}" aria-pressed="${k===t}">${bd(g[t],18)}${NAME[g[t]]}</button>`).join('')}</div>`;
+  const P=D.p[k];let tb;
+  if(P&&P.rows.length){
+    const W=['MIN','PTS','FG','3PT','FT','REB','AST','STL','BLK','TO','PF','+/-'];
+    const ix=W.map(w=>P.names.indexOf(w)),ip=P.names.indexOf('PTS');
+    const played=P.rows.filter(r=>!r.d),dnp=P.rows.filter(r=>r.d);
+    const mx=Math.max(...played.map(r=>+r.v[ip]||0));
+    const tr=r=>`<tr${(+r.v[ip]===mx&&mx>0)?' class="top"':''}><th scope="row">${r.n}<small>${r.pos}</small></th>${ix.map(i=>`<td>${i<0?'':(r.v[i]!=null?r.v[i]:'')}</td>`).join('')}</tr>`;
+    const st=played.filter(r=>r.s),bn=played.filter(r=>!r.s);
+    tb=`<div class="gtb" data-sk="${g.id}"><table class="gp"><thead><tr><th>Jugador</th>${W.map(w=>`<th>${w}</th>`).join('')}</tr></thead><tbody>${st.map(tr).join('')}${bn.length?`<tr class="sep"><th colspan="${W.length+1}">Banco</th></tr>`:''}${bn.map(tr).join('')}</tbody><tfoot><tr><th scope="row">Total</th>${ix.map((i,j)=>`<td>${(i<0||W[j]==='MIN'||W[j]==='+/-')?'':(P.tot[i]||'')}</td>`).join('')}</tr></tfoot></table></div>`
+      +(dnp.length?`<div class="gdnp">No jugaron: ${dnp.map(r=>r.n).join(', ')}</div>`:'');
+  }else tb='<div class="gl">Todavía no hay estadísticas de jugadores.</div>';
+  const cm=GCMP.filter(r=>D.ts.a[r[1]]!=null&&D.ts.h[r[1]]!=null).map(([l,key,pk,inv])=>{
+    const f=t=>{const s=D.ts[t];return s[key]+(pk&&s[pk]!=null?' · '+s[pk]+'%':'')};
+    const v=t=>parseFloat(D.ts[t][pk||key]);
+    const a=v('a'),h=v('h'),eq=a===h||isNaN(a)||isNaN(h);
+    const wa=!eq&&(inv?a<h:a>h),wh=!eq&&(inv?h<a:h>a);
+    return `<div class="r"><span class="${wa?'w':''}">${f('a')}</span><em>${l}</em><span class="${wh?'w':''}">${f('h')}</span></div>`;
+  }).join('');
+  const cmp=cm?`<div class="gcmp"><div class="r hd"><span>${g.a}</span><em>Equipos</em><span>${g.h}</span></div>${cm}</div>`:'';
+  return `<div class="gd">${c.err?'<div class="gl">No se pudo actualizar; se muestra lo último cargado.</div>':''}${q}${tabs}${tb}${cmp}${D.venue?`<div class="gdnp">${D.venue} · datos de ESPN</div>`:''}</div>`;
+}
+$('main').addEventListener('click',e=>{
+  const r=e.target.closest('[data-gretry]');
+  if(r){const g=GAMES.find(x=>x.id===r.dataset.gretry);if(g)gload(g,true);return}
+  const b=e.target.closest('[data-gsel]');
+  if(b){GSEL[b.dataset.gid]=b.dataset.gsel;render();return}
+  const t=e.target.closest('.gt');
+  if(t)gtoggle(t.dataset.gid);
+});
+$('main').addEventListener('keydown',e=>{
+  if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('gt')){e.preventDefault();gtoggle(e.target.dataset.gid)}
+});
 render();
 const OV={},NRM={NY:'NYK',SA:'SAS',GS:'GSW',NO:'NOP',UTAH:'UTA',WSH:'WAS'};
 let vivoOK=true,tickN=0;
@@ -402,6 +542,7 @@ const caliente=()=>{const n=Date.now();return GAMES.some(g=>g.st==='live'||(g.st
 cargar();
 setInterval(async()=>{
   tickN++;
+  refrescaDet();
   if(caliente()){
     if(vivoOK){try{await vivo();return}catch(e){vivoOK=false}}
     if(tickN%2===0)cargar();

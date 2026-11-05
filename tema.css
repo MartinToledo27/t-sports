@@ -1,0 +1,14 @@
+:root{--fd:'Barlow Condensed','Arial Narrow',sans-serif;--fb:'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+--bg:#F5F4F2;--surface:#fff;--sf:#fff;--ink:#111;--mute:#5F5F5B;--line:#E0DED8;color-scheme:light dark}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0D0D0E;--surface:#18181A;--sf:#18181A;--ink:#F4F3F0;--mute:#A5A49E;--line:#2D2D30}}
+:root[data-theme=dark]{--bg:#0D0D0E;--surface:#18181A;--sf:#18181A;--ink:#F4F3F0;--mute:#A5A49E;--line:#2D2D30;color-scheme:dark}
+:root[data-theme=light]{color-scheme:light}
+body,button,input,select,textarea{font-family:var(--fb)}
+h1,h2,h3,.gp h2,.day h2,h2.conf,nav button{font-family:var(--fd);font-weight:800;font-style:italic;text-transform:uppercase;letter-spacing:.02em}
+nav button{font-weight:700;font-size:18px;transition:color .2s,border-color .2s}
+.hora,.time,.side .sc,.tm .sc{font-family:var(--fd);font-weight:700}
+button{transition:transform .12s}button:active{transform:scale(.97)}
+.emb header{margin-top:8px;padding:10px 14px 14px;border-radius:12px;gap:8px}
+.emb h1{font-size:24px}
+.emb .sub{font-size:12px;margin-top:2px}
+.emb header svg{height:52px;width:auto;max-width:34vw}

@@ -143,18 +143,25 @@ function favBar(){
    (panel?`<div class="fpanel"><div class="dia">Pilotos</div><div class="ctrl">${D.pilotos.map(x=>chip('p',x.cod,ap(x))).join('')}</div><div class="dia">Escuderías</div><div class="ctrl">${D.constructores.map(x=>chip('e',x.id,x.nombre)).join('')}</div></div>`:'');
 }
 function vivo(c){
-  const S=ses(c).filter(s=>s.v&&s.v.ord.length&&s.v.st!=='pre');if(!S.length)return'';
-  const en=S.find(s=>s.v.st==='in'),s=en||S[S.length-1];
-  const tit=en?NOM[s.k]:(s.k==='Q'?'Parrilla de largada':s.k==='R'?'Resultado final':'Clasificación')+' · '+NOM[s.k];
+  const SS=ses(c),qd=k=>{const q=SS.find(x=>x.k===k);return !!(q&&q.v&&q.v.st==='post')};
+  const gr=s=>!!(s.v&&s.v.grid&&s.v.st==='pre'&&((s.k==='R'&&qd('Q'))||(s.k==='SPR'&&qd('SQ'))));
+  const S=SS.filter(s=>s.v&&s.v.ord.length&&(s.v.st!=='pre'||gr(s)));if(!S.length)return'';
+  const en=S.find(s=>s.v.st==='in'),s=en||S[S.length-1],g=gr(s);
+  const tit=en?NOM[s.k]:g?'Parrilla de largada · '+NOM[s.k]:s.k==='Q'?'Resultado de clasificación (sin penalizaciones)':(s.k==='R'?'Resultado final':'Clasificación')+' · '+NOM[s.k];
+  const qo=g?((SS.find(x=>x.k===(s.k==='R'?'Q':'SQ'))||{}).v||{}).ord||[]:[];
+  const cambio=(n,i)=>{if(!g)return'';const q=qo.indexOf(n);if(q<0)return'';const d=q-i;return d>0?`<span style="color:#2ecc71">▲${d}</span>`:d<0?`<span style="color:#ff5a4d">▼${-d}</span>`:''};
   const rows=s.v.ord.map((n,i)=>{const p=D.pilotos.find(p=>n.includes(ap(p)));
-    return p?fila(i+1,'p',p.cod,ap(p),p.equipo,'',p.equipoId):`<div class="r" style="--c:#888"><span class="p">${i+1}</span><span class="n">${n}</span><b></b></div>`}).join('');
+    return p?fila(i+1,'p',p.cod,ap(p),p.equipo,cambio(n,i),p.equipoId):`<div class="r" style="--c:#888"><span class="p">${i+1}</span><span class="n">${n}</span><b>${cambio(n,i)}</b></div>`}).join('');
+  const nota=g?'<div style="font-size:12px;color:var(--mute);padding:6px 2px 8px">Orden de largada según ESPN, con las penalizaciones aplicadas. Las flechas comparan con la clasificación. Puede cambiar hasta la largada.</div>':'';
   const ab=VO===undefined?!!(en||s.k==='Q'||s.k==='R'):VO;
-  return`<details class="vivo"${ab?' open':''}><summary><span>${en?'<span class="pill" style="margin:0 6px 0 0">EN VIVO</span>':''}${tit}</span><span>${s.v.ord.length} pilotos</span></summary><div class="tb">${rows}</div></details>`;
+  return`<details class="vivo"${ab?' open':''}><summary><span>${en?'<span class="pill" style="margin:0 6px 0 0">EN VIVO</span>':''}${tit}</span><span>${s.v.ord.length} pilotos</span></summary><div class="tb">${rows}</div>${nota}</details>`;
 }
 function live(){
   return fetch('https://site.api.espn.com/apis/site/v2/sports/racing/f1/scoreboard').then(r=>r.json()).then(j=>{
     const o={};(j.events||[]).forEach(e=>(e.competitions||[]).forEach(c=>{
-      o[+new Date(c.startDate||c.date)]={st:c.status.type.state,ord:(c.competitors||[]).slice().sort((a,b)=>a.order-b.order).map(x=>x.athlete.fullName)}}));
+      const cs=(c.competitors||[]).slice(),hasO=cs.length>0&&cs.every(x=>x.order!=null);
+      if(hasO)cs.sort((a,b)=>a.order-b.order);
+      o[+new Date(c.startDate||c.date)]={st:c.status.type.state,ord:cs.map(x=>x.athlete.fullName),grid:!hasO}}));
     const s=JSON.stringify(o);if(s!==LS){LS=s;LV=o;if(D&&tab==='inicio')render()}
   }).catch(()=>{});
 }

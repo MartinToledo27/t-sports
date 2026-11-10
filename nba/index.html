@@ -214,6 +214,26 @@ header svg{flex:none}
 .gp thead th{font-size:12px;border-bottom:1px solid var(--line)}
 .gp tbody th,.gp tfoot th{font:600 13px/1.1 var(--fb);color:var(--ink)}
 .gp tbody tr:last-child td,.gp tbody tr:last-child th{border-bottom:0}
+.sr[data-tm]{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.sr[data-tm]:focus-visible{outline:2px solid #8cd700;outline-offset:-2px}
+.sr .chv{display:inline-block;width:6px;height:6px;margin-left:8px;border:solid var(--mute);border-width:0 2px 2px 0;transform:rotate(45deg) translateY(-2px);opacity:.7;transition:transform .2s}
+.tw.open>.sr .chv{transform:rotate(-135deg) translateY(-2px)}
+.tw>.sr:last-child{border-bottom:1px solid var(--line)}
+.tw>.sr.cut:last-child{border-bottom:2px solid var(--ink)}
+.tw>.sr.cut2:last-child{border-bottom:2px dashed var(--mute)}
+.tb>.tw:last-child>.sr:last-child{border-bottom:0}
+.td{background:var(--bg);border-bottom:1px solid var(--line);padding:10px 12px 12px}
+.tw:last-child>.td{border-bottom:0}
+.tsm{font:800 17px/1.1 var(--fd);text-transform:uppercase;font-style:italic;letter-spacing:.02em}
+.tex{font-size:13px;color:var(--mute);margin-top:4px}
+.tlb{font:700 12px/1 var(--fd);letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin:12px 0 8px}
+.tgr{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tgr>div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 6px;text-align:center}
+.tgr b{display:block;font:800 22px/1 var(--fd);font-variant-numeric:tabular-nums}
+.tgr span{display:block;margin-top:4px;font-size:11px;color:var(--mute)}
+.td .gp th:first-child{background:var(--bg)}
+.td .gtb{margin:0 -6px}
+.td .gp tr.top th,.td .gp tr.top td{color:var(--ink)}
 </style>
 </head>
 <body>
@@ -363,11 +383,110 @@ function days(list,desc,empty){
   if(!list.length)return `<div class="empty">${empty}</div>`;
   return group(list,desc).map(([k,gs])=>`<section class="day"><h2>${dayLabel(k)}</h2><div class="date">${dayDate(k)}</div>${gs.sort((a,b)=>a.t-b.t).map(row).join('')}</section>`).join('');
 }
+/* ===== Posiciones: estadísticas del equipo en la temporada (ESPN) ===== */
+const TOPEN=new Set(),TDET={};
+const TID={ATL:1,BOS:2,BKN:17,CHA:30,CHI:4,CLE:5,DAL:6,DEN:7,DET:8,GSW:9,HOU:10,IND:11,LAC:12,LAL:13,MEM:29,MIA:14,MIL:15,MIN:16,NOP:3,NYK:18,OKC:25,ORL:19,PHI:20,PHX:21,POR:22,SAC:23,SAS:24,TOR:28,UTA:26,WAS:27};
+const TDIV={Atlantic:'Atlántico',Central:'Central',Southeast:'Sudeste',Northwest:'Noroeste',Pacific:'Pacífico',Southwest:'Sudoeste'};
+const tStand=x=>{const m=/^(\d+)\w{2} in (\w+) Division$/.exec(x||'');return m?`${m[1]}.º en la División ${TDIV[m[2]]||m[2]}`:(x||'')};
+function tparse(j1,j2){
+  const st={};
+  (((j1.results||{}).stats||{}).categories||[]).forEach(c=>(c.stats||[]).forEach(x=>{if(st[x.name]==null)st[x.name]=x.value}));
+  const t=j2.team||{},rec=(t.record||{}).items||[];
+  const pick=ty=>rec.find(x=>x.type===ty)||{},m=o=>{const r={};(o.stats||[]).forEach(x=>{r[x.name]=x.value});return r};
+  const ov=pick('total');
+  return {ts:Date.now(),st,ov:m(ov),sum:{t:ov.summary||'',h:pick('home').summary||'',a:pick('road').summary||''},
+    stand:t.standingSummary||'',season:(j1.season||{}).displayName||'',abbr:(j1.team||{}).abbreviation||''};
+}
+async function tload(a,force){
+  const id=TID[a];if(!id)return;
+  const c=TDET[a];
+  if(c&&c.busy)return;
+  if(!force&&c&&c.D&&Date.now()-c.D.ts<6*36e5)return;
+  TDET[a]={D:c?c.D:null,busy:true};
+  if(!c)render();
+  try{
+    const [r1,r2]=await Promise.all([fetch(`${ESB}/teams/${id}/statistics`),fetch(`${ESB}/teams/${id}`)]);
+    if(!r1.ok)throw 0;
+    const D=tparse(await r1.json(),r2.ok?await r2.json():{});
+    if(D.abbr&&(NRM[D.abbr]||D.abbr)!==a)throw 0;
+    TDET[a]={D};
+  }catch(e){TDET[a]={D:c?c.D:null,err:true}}
+  render();
+}
+function ttoggle(a){
+  if(TOPEN.has(a))TOPEN.delete(a);else{TOPEN.add(a);tload(a);pload()}
+  render();
+}
+function tdet(a){
+  const c=TDET[a];
+  if(!c||!c.D)return `<div class="td">${c&&c.err?`<div class="gl">No se pudieron cargar las estadísticas. <button class="chip" data-tretry="${a}">Reintentar</button></div>`:'<div class="gl">Cargando estadísticas…</div>'}</div>`;
+  const D=c.D,s=D.st,o=D.ov,gp=s.gamesPlayed||0;
+  const f1=v=>v==null||isNaN(v)?'–':(+v).toFixed(1);
+  const dif=o.differential==null?'–':((o.differential>0?'+':'')+(+o.differential).toFixed(1));
+  const rk=o.streak?(o.streak>0?'G':'P')+Math.abs(o.streak):'';
+  const sub=[D.sum.t,tStand(D.stand)].filter(Boolean).join(' · ');
+  const ex=[D.sum.h?`Local ${D.sum.h}`:'',D.sum.a?`Visitante ${D.sum.a}`:'',rk?`Racha ${rk}`:''].filter(Boolean).join(' · ');
+  const T=[['Puntos',f1(s.avgPoints)],['Puntos en contra',f1(o.avgPointsAgainst)],['Diferencia',dif],['Tiros de campo',f1(s.fieldGoalPct)+'%'],['Triples',f1(s.threePointFieldGoalPct)+'%'],['Tiros libres',f1(s.freeThrowPct)+'%'],['Rebotes',f1(s.avgRebounds)],['Asistencias',f1(s.avgAssists)],['Robos',f1(s.avgSteals)],['Tapas',f1(s.avgBlocks)],['Pérdidas',f1(s.avgTurnovers)],['Reb. ofensivos',f1(s.avgOffensiveRebounds)]];
+  const body=gp?`<div class="tgr">${T.map(([l,v])=>`<div><b>${v}</b><span>${l}</span></div>`).join('')}</div>`:'<div class="gl">Todavía no jugó partidos en la temporada.</div>';
+  return `<div class="td">${c.err?'<div class="gl">No se pudo actualizar; se muestra lo último cargado.</div>':''}<div class="tsm">${sub}</div>${ex?`<div class="tex">${ex}</div>`:''}<div class="tlb">Promedios por partido${D.season?' · '+D.season:''}${gp?` · ${gp} PJ`:''}</div>${body}${tplayers(a)}<div class="gdnp">Datos de ESPN</div></div>`;
+}
+/* ===== Promedios de jugadores de la temporada (ESPN, todos los equipos juntos) ===== */
+const PLS={d:null,busy:false,err:false};
+const PLY=()=>{const n=new Date();return n.getMonth()>=8?n.getFullYear()+1:n.getFullYear()};
+function pcompact(j,out){
+  const nm=(j.categories||[]).map(c=>c.names||[]);
+  (j.athletes||[]).forEach(a=>{
+    const m={};
+    (a.categories||[]).forEach((c,i)=>{const names=nm[i]||[];(c.values||[]).forEach((v,k)=>{if(names[k]&&m[names[k]]==null)m[names[k]]=v})});
+    const gp=m.gamesPlayed||0;if(!gp)return;
+    const at=a.athlete||{},t=String(a.teamId||at.teamId||'');
+    (out[t]=out[t]||[]).push({n:at.shortName||at.displayName||'?',pos:(at.position||{}).abbreviation||'',gp,mpg:m.avgMinutes,pts:m.avgPoints,reb:m.avgRebounds,ast:m.avgAssists,stl:m.avgSteals,blk:m.avgBlocks,to:m.avgTurnovers,
+      fg:m.avgFieldGoalsAttempted?m.fieldGoalPct:null,tp:m.avgThreePointFieldGoalsAttempted?m.threePointFieldGoalPct:null,ft:m.avgFreeThrowsAttempted?m.freeThrowPct:null});
+  });
+}
+async function pload(force){
+  if(PLS.busy)return;
+  if(!force&&PLS.d)return;
+  if(!force){try{const c=JSON.parse(localStorage.getItem('nba_pl')||'null');if(c&&c.y===PLY()&&Date.now()-c.ts<6*36e5){PLS.d=c.d;render();return}}catch(e){}}
+  PLS.busy=true;PLS.err=false;render();
+  try{
+    const u=p=>`https://site.api.espn.com/apis/common/v3/sports/basketball/nba/statistics/byathlete?region=us&lang=en&contentorigin=espn&isqualified=false&limit=50&sort=offensive.avgPoints%3Adesc&season=${PLY()}&seasontype=2&page=${p}`;
+    const r1=await fetch(u(1));if(!r1.ok)throw 0;
+    const j1=await r1.json(),pg=Math.min(((j1.pagination||{}).pages)||1,20),out={};
+    pcompact(j1,out);
+    const rs=await Promise.all(Array.from({length:pg-1},(_,i)=>fetch(u(i+2)).then(r=>{if(!r.ok)throw 0;return r.json()})));
+    rs.forEach(j=>pcompact(j,out));
+    Object.values(out).forEach(a=>a.sort((x,y)=>(y.pts||0)-(x.pts||0)));
+    PLS.d=out;
+    try{localStorage.setItem('nba_pl',JSON.stringify({ts:Date.now(),y:PLY(),d:out}))}catch(e){}
+  }catch(e){PLS.err=true}
+  PLS.busy=false;render();
+}
+function tplayers(a){
+  const L=PLS.d&&PLS.d[String(TID[a])],h='<div class="tlb">Jugadores · promedios por partido</div>';
+  if(!PLS.d)return h+(PLS.err&&!PLS.busy?'<div class="gl">No se pudieron cargar los jugadores. <button class="chip" data-pretry="1">Reintentar</button></div>':'<div class="gl">Cargando jugadores…</div>');
+  if(!L||!L.length)return h+'<div class="gl">Todavía no hay jugadores con partidos jugados.</div>';
+  const f=v=>v==null||isNaN(v)?'–':(+v).toFixed(1);
+  const rows=L.map((p,i)=>`<tr${i===0?' class="top"':''}><th scope="row">${p.n}<small>${p.pos}</small></th><td>${p.gp}</td><td>${f(p.mpg)}</td><td>${f(p.pts)}</td><td>${f(p.reb)}</td><td>${f(p.ast)}</td><td>${f(p.stl)}</td><td>${f(p.blk)}</td><td>${f(p.fg)}</td><td>${f(p.tp)}</td><td>${f(p.ft)}</td><td>${f(p.to)}</td></tr>`).join('');
+  return h+`<div class="gtb" data-sk="t-${a}"><table class="gp"><thead><tr><th>Jugador</th><th>PJ</th><th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>ROB</th><th>TAP</th><th>TC%</th><th>3P%</th><th>TL%</th><th>PÉR</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+$('main').addEventListener('click',e=>{
+  const pr=e.target.closest('[data-pretry]');
+  if(pr){pload(true);return}
+  const r=e.target.closest('[data-tretry]');
+  if(r){tload(r.dataset.tretry,true);return}
+  const t=e.target.closest('.sr[data-tm]');
+  if(t)ttoggle(t.dataset.tm);
+});
+$('main').addEventListener('keydown',e=>{
+  if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('.sr[data-tm]')){e.preventDefault();ttoggle(e.target.dataset.tm)}
+});
 function standings(){
   const fxt=a=>{const k=COL[a]||['#888','#ccc'];return `<i class="fx"><b style="--c1:${k[0]};--c2:${k[1]}"></b></i>`};
   const tbl=(arr,label)=>{
     const rows=arr.map(([a,n,w,l],i)=>{const pj=w+l,f=favs.has(a);
-      return `<div class="sr${f?' fav':''}${i===5?' cut':''}${i===9?' cut2':''}">${f?fxt(a):''}<span class="mu">${i+1}</span><span class="nm">${bd(a,22)}${n}</span><span>${w}</span><span>${l}</span><span>${pj?(w/pj).toFixed(3).replace(/^0/,''):'–'}</span></div>`}).join('');
+      const op=TOPEN.has(a);
+      return `<div class="tw${op?' open':''}"><div class="sr${f?' fav':''}${i===5?' cut':''}${i===9?' cut2':''}" data-tm="${a}" role="button" tabindex="0" aria-expanded="${op}">${f?fxt(a):''}<span class="mu">${i+1}</span><span class="nm">${bd(a,22)}${n}<i class="chv"></i></span><span>${w}</span><span>${l}</span><span>${pj?(w/pj).toFixed(3).replace(/^0/,''):'–'}</span></div>${op?tdet(a):''}</div>`}).join('');
     return `<h2 class="conf">${label}</h2><div class="tb"><div class="sr hd"><span class="mu">#</span><span class="nm">Equipo</span><span>G</span><span>P</span><span>%</span></div>${rows}</div>`;
   };
   const ord=(k,b)=>STAND&&STAND[k]&&STAND[k].length?STAND[k].map(x=>[x.a,NAME[x.a]||x.a,x.w,x.l]):b.map(([a,n])=>[a,n,0,0]);

@@ -7,6 +7,9 @@ PRIME = {"Prime Video"}
 ESPN = {"ESPN", "ESPN2", "ABC", "ESPN Deportes", "ESPN+"}
 NBC = {"NBC", "Peacock", "NBCSN"}
 MODO = sys.argv[1] if len(sys.argv) > 1 else "rapido"
+# Fechas (hora del Este de EE.UU.) de la NBA Cup 2026: grupos y fase final
+COPA_FECHAS = ["20261030", "20261106", "20261113", "20261120", "20261124", "20261125", "20261127",
+               "20261204", "20261205", "20261208", "20261209", "20261211"]
 
 
 def get(url):
@@ -24,6 +27,23 @@ def cargar(nombre, defecto):
 
 def n(abrev):
     return NORM.get(abrev, abrev)
+
+
+def copa(c):
+    # ESPN marca los partidos de la Cup en competitions[0].notes (ej. "NBA Cup - Group Play")
+    for nt in c.get("notes", []):
+        h = (nt.get("headline") or "").lower()
+        if "cup" in h:
+            if "group" in h:
+                return "G"
+            if "quarter" in h:
+                return "QF"
+            if "semi" in h:
+                return "SF"
+            if "final" in h or "champ" in h:
+                return "F"
+            return "X"
+    return ""
 
 
 viejo = cargar("data.json", {})
@@ -48,8 +68,10 @@ def plataforma(canales, clave):
     return "none"
 
 
-for i in dias:
-    d = (hoy + timedelta(days=i)).strftime("%Y%m%d")
+fechas = [(hoy + timedelta(days=i)).strftime("%Y%m%d") for i in dias]
+if MODO != "rapido":
+    fechas = sorted(set(fechas) | set(COPA_FECHAS))  # el modo completo repasa toda la Cup
+for d in fechas:
     try:
         data = get(f"{B}/scoreboard?dates={d}")
     except Exception as ex:
@@ -71,6 +93,9 @@ for i in dias:
             estado = {"pre": "sched", "in": "live", "post": "final"}.get(tipo.get("state"), "sched")
             p = {"id": e["id"], "t": t.strftime("%Y-%m-%dT%H:%M:%SZ"), "a": a, "h": h,
                  "p": plataforma(canales, clave), "st": estado}
+            cu = copa(c)
+            if cu:
+                p["cu"] = cu
             if estado != "sched":
                 p["sa"] = int(eq["away"].get("score") or 0)
                 p["sh"] = int(eq["home"].get("score") or 0)

@@ -1,0 +1,22 @@
+PARRILLA CON SANCIONES (F1) - carga manual, antes de la carrera
+
+Archivo: f1/parrilla.json  (se edita en GitHub con el lapicito y se guarda con "Commit changes")
+
+Formato: "ronda" es el número de fecha del Gran Premio (el de Las Vegas es la 21).
+En "sanciones" va un renglón por piloto sancionado, con la posición donde LARGA:
+
+{"ronda":21,"sanciones":[
+  {"cod":"LEC","sale":14,"motivo":"motor nuevo"},
+  {"cod":"VER","sale":21},
+  {"cod":"HAM","pit":true}
+]}
+
+- "cod": las 3 letras del piloto (LEC, VER, HAM, COL, RUS...).
+- "sale": posición en la que larga (14 = largará 14.º). Los demás ocupan los lugares que quedan libres, en el orden de la clasificación.
+- "pit": true = larga desde boxes (queda último).
+- "pierde": 10 = pierde 10 puestos respecto de la clasificación (alternativa a "sale").
+- "motivo" es opcional y se muestra al lado del nombre.
+- Si preferís cargar la parrilla completa: "grid":["NOR","ANT","LAW", ...] con los códigos en orden de largada (reemplaza todo lo anterior).
+
+Se usa solo si "ronda" coincide con el Gran Premio que viene. Con "sanciones":[] (vacío) no hace nada: la agenda sigue mostrando lo que informa ESPN.
+Después de la carrera la agenda toma sola la parrilla real desde Jolpica y marca quién perdió lugares.

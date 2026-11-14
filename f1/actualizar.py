@@ -66,7 +66,7 @@ def resultados():
                if datetime.fromisoformat(c["sesiones"][-1]["t"].replace("Z", "+00:00")) < ahora]
     for i, c in enumerate(pasadas):
         r = str(c["ronda"])
-        if r in res and i < len(pasadas) - 1:  # la ultima se vuelve a bajar (penalizaciones)
+        if r in res and i < len(pasadas) - 1 and res[r] and "q" in res[r][0]:  # la ultima se vuelve a bajar (penalizaciones)
             continue
         try:
             carr = get(f"{J}/{r}/results.json")["RaceTable"]["Races"]
@@ -74,10 +74,24 @@ def resultados():
             print("Fallo resultados", r, ex)
             continue
         if carr:
-            res[r] = [{"pos": x["positionText"], "cod": x["Driver"]["code"], "ape": x["Driver"]["familyName"],
-                       "eq": x["Constructor"]["constructorId"], "grid": x["grid"], "estado": x["status"],
-                       "tiempo": (x.get("Time") or {}).get("time", ""), "pts": x["points"]} for x in carr[0]["Results"]]
-        time.sleep(0.3)
+            qp = {}  # puesto en la clasificacion, para detectar quien perdio lugares en la parrilla (sanciones)
+            try:
+                qs = get(f"{J}/{r}/qualifying.json")["RaceTable"]["Races"]
+                if qs:
+                    qp = {x["Driver"]["code"]: int(x["position"]) for x in qs[0]["QualifyingResults"]}
+            except Exception as ex:
+                print("Fallo clasificacion", r, ex)
+            filas = [{"pos": x["positionText"], "cod": x["Driver"]["code"], "ape": x["Driver"]["familyName"],
+                      "eq": x["Constructor"]["constructorId"], "grid": x["grid"], "estado": x["status"],
+                      "tiempo": (x.get("Time") or {}).get("time", ""), "pts": x["points"]} for x in carr[0]["Results"]]
+            for f in filas:
+                if f["cod"] in qp:
+                    f["q"] = qp[f["cod"]]
+            if qp:
+                res[r] = filas
+            elif r not in res:
+                res[r] = filas
+        time.sleep(0.5)
     return res
 
 

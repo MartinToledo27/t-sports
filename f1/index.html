@@ -71,6 +71,9 @@ details .r{background:none}.r.fv{position:relative;overflow:hidden}.r>span,.r>b{
 .fpanel{background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:2px 12px 10px;margin-top:6px}
 .fpanel .chip[aria-pressed=true]{background:var(--red);border-color:var(--red);color:#fff}
 details.vivo{border-left:5px solid var(--red);margin:0 0 10px}
+.san0{font-size:13px;color:var(--mute);padding:6px 2px 8px;line-height:1.5}.san0 b{color:var(--ink)}.san0 small{opacity:.8}
+.san{color:var(--red);font-weight:700}
+.wrap{overflow-x:clip}body{touch-action:pan-y pinch-zoom}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,600;0,700;0,800;1,700;1,800&family=Barlow:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="../tema.css?v=2">
@@ -91,7 +94,7 @@ const fh=d=>d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12
 const fd=d=>cap(d.toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'numeric',timeZone:TZ}));
 const fc=d=>d.toLocaleDateString('es-AR',{day:'numeric',month:'short',timeZone:TZ}).replace('.','');
 const dayK=d=>d.toLocaleDateString('en-CA',{timeZone:TZ});
-let D=null,LV={},LS='',VO,tab='inicio',sub='p',panel=false,F={p:[],e:[]};
+let D=null,PM=null,LV={},LS='',VO,tab='inicio',sub='p',panel=false,F={p:[],e:[]};
 try{F=JSON.parse(localStorage.getItem('f1_favs'))||F}catch(e){}
 const TC={mercedes:['#27F4D2','#6C6C6C'],ferrari:['#E8002D','#FFEB00'],mclaren:['#FF8000','#47C7FC'],red_bull:['#3671C6','#E10A3C'],rb:['#6692FF','#E8E8E8'],alpine:['#FF87BC','#0093CC'],haas:['#B6BABD','#E6002B'],audi:['#F50537','#C9C9C9'],williams:['#64C4FF','#00339A'],aston_martin:['#229971','#CEDC00'],cadillac:['#AAAAAD','#1D3FA8']};
 const col=id=>TC[id]||['#888','#ccc'],tc=id=>col(id)[0],fx=id=>{const k=col(id);return`<i class="fx"><b style="--c1:${k[0]};--c2:${k[1]}"></b></i>`};
@@ -132,7 +135,10 @@ function posiciones(){
 }
 function resHtml(c){
   const r=D.resultados&&D.resultados[c.ronda];if(!r)return'';
-  return'<div class="tb">'+r.map(x=>`<div class="r${isF('p',x.cod)?' fv':''}" style="--c:${tc(x.eq)}">${isF('p',x.cod)?fx(x.eq):''}<span class="p">${x.pos}</span><span class="n">${x.ape}<small>Largó ${x.grid==='0'?'desde boxes':x.grid+'º'} · ${x.tiempo||x.estado}</small></span><b>${x.pts}</b></div>`).join('')+'</div>';
+  const dq=x=>{if(x.grid==='0')return' · <span class="san">desde boxes</span>';return x.q&&+x.grid>x.q?` · <span class="san">sanción −${+x.grid-x.q}</span>`:''};
+  const sn=r.filter(x=>x.grid==='0'||(x.q&&+x.grid>x.q)).sort((a,b)=>(a.q||99)-(b.q||99));
+  const head=sn.length?`<div class="san0"><b>Sancionados en la parrilla:</b> ${sn.map(x=>`${x.ape} <span class="san">${x.grid==='0'?'boxes':'−'+(+x.grid-x.q)}</span>`).join(' · ')}</div>`:'';
+  return head+'<div class="tb">'+r.map(x=>`<div class="r${isF('p',x.cod)?' fv':''}" style="--c:${tc(x.eq)}">${isF('p',x.cod)?fx(x.eq):''}<span class="p">${x.pos}</span><span class="n">${x.ape}<small>Largó ${x.grid==='0'?'desde boxes':x.grid+'º'}${dq(x)} · ${x.tiempo||x.estado}</small></span><b>${x.pts}</b></div>`).join('')+'</div>';
 }
 const ap=x=>x.ape||x.nombre.split(' ').slice(-1)[0];
 function favBar(){
@@ -142,19 +148,41 @@ function favBar(){
   document.getElementById('favbar').innerHTML=`<button class="fbtn" aria-expanded="${panel}">★ Favoritos (${ps.length+es.length})<span class="fn">${names}</span><span>${panel?'▴':'▾'}</span></button>`+
    (panel?`<div class="fpanel"><div class="dia">Pilotos</div><div class="ctrl">${D.pilotos.map(x=>chip('p',x.cod,ap(x))).join('')}</div><div class="dia">Escuderías</div><div class="ctrl">${D.constructores.map(x=>chip('e',x.id,x.nombre)).join('')}</div></div>`:'');
 }
+function aplicar(qo,P){
+  /* Parrilla = orden de clasificación, con cada sancionado fijo en la posición donde sale. Los demás ocupan los lugares libres en orden. */
+  const cod=n=>{const p=D.pilotos.find(p=>n.includes(ap(p)));return p&&p.cod},N=qo.length;
+  if(Array.isArray(P.grid)&&P.grid.length){const m={};qo.forEach(n=>m[cod(n)]=n);const L=P.grid.map(c=>m[c]).filter(Boolean);qo.forEach(n=>{if(!L.includes(n))L.push(n)});return L}
+  const fix={};
+  (P.sanciones||[]).forEach(z=>{const i=qo.findIndex(n=>cod(n)===z.cod);if(i<0)return;
+    const p=z.sale?+z.sale:z.pit?N:Math.min(N,i+1+(+z.pierde||0));fix[z.cod]=Math.max(1,Math.min(N,p))});
+  const L=new Array(N).fill(null);
+  Object.entries(fix).sort((a,b)=>a[1]-b[1]).forEach(([c,p])=>{let k=p-1;while(L[k])k=(k+1)%N;L[k]=qo.find(n=>cod(n)===c)});
+  const rest=qo.filter(n=>!(cod(n) in fix));let j=0;
+  for(let k=0;k<N;k++)if(!L[k])L[k]=rest[j++];
+  return L;
+}
 function vivo(c){
   const SS=ses(c),qd=k=>{const q=SS.find(x=>x.k===k);return !!(q&&q.v&&q.v.st==='post')};
-  const gr=s=>!!(s.v&&s.v.grid&&s.v.st==='pre'&&((s.k==='R'&&qd('Q'))||(s.k==='SPR'&&qd('SQ'))));
+  const pm=!!(PM&&+PM.ronda===c.ronda&&((PM.grid&&PM.grid.length)||(PM.sanciones||[]).length));
+  const gr=s=>!!(s.v&&s.v.st==='pre'&&((s.k==='R'&&qd('Q')&&(s.v.grid||pm))||(s.k==='SPR'&&qd('SQ')&&s.v.grid)));
   const S=SS.filter(s=>s.v&&s.v.ord.length&&(s.v.st!=='pre'||gr(s)));if(!S.length)return'';
   const en=S.find(s=>s.v.st==='in'),s=en||S[S.length-1],g=gr(s);
-  const tit=en?NOM[s.k]:g?'Parrilla de largada · '+NOM[s.k]:s.k==='Q'?'Resultado de clasificación (sin penalizaciones)':(s.k==='R'?'Resultado final':'Clasificación')+' · '+NOM[s.k];
   const qo=g?((SS.find(x=>x.k===(s.k==='R'?'Q':'SQ'))||{}).v||{}).ord||[]:[];
+  const man=g&&s.k==='R'&&pm&&qo.length>0,ord=man?aplicar(qo,PM):s.v.ord;
+  const tit=en?NOM[s.k]:g?'Parrilla de largada · '+NOM[s.k]+(man?' (con sanciones)':''):s.k==='Q'?'Resultado de clasificación (sin penalizaciones)':(s.k==='R'?'Resultado final':'Clasificación')+' · '+NOM[s.k];
   const cambio=(n,i)=>{if(!g)return'';const q=qo.indexOf(n);if(q<0)return'';const d=q-i;return d>0?`<span style="color:#2ecc71">▲${d}</span>`:d<0?`<span style="color:#ff5a4d">▼${-d}</span>`:''};
-  const rows=s.v.ord.map((n,i)=>{const p=D.pilotos.find(p=>n.includes(ap(p)));
+  const rows=ord.map((n,i)=>{const p=D.pilotos.find(p=>n.includes(ap(p)));
     return p?fila(i+1,'p',p.cod,ap(p),p.equipo,cambio(n,i),p.equipoId):`<div class="r" style="--c:#888"><span class="p">${i+1}</span><span class="n">${n}</span><b>${cambio(n,i)}</b></div>`}).join('');
-  const nota=g?'<div style="font-size:12px;color:var(--mute);padding:6px 2px 8px">Orden de largada según ESPN, con las penalizaciones aplicadas. Las flechas comparan con la clasificación. Puede cambiar hasta la largada.</div>':'';
+  let sanH='';
+  if(g){
+    const san=ord.map((n,i)=>({n,i,q:qo.indexOf(n)})).filter(x=>x.q>=0&&x.i>x.q).map(x=>{
+      const p=D.pilotos.find(p=>x.n.includes(ap(p))),m=man&&(PM.sanciones||[]).find(z=>p&&z.cod===p.cod);
+      return `${p?ap(p):x.n} <span class="san">−${x.i-x.q}</span>${m&&m.motivo?` <small>(${m.motivo})</small>`:''}`});
+    sanH=`<div class="san0"><b>Sancionados:</b> ${san.length?san.join(' · '):'ninguno informado todavía'}</div>`;
+  }
+  const nota=g?`<div style="font-size:12px;color:var(--mute);padding:6px 2px 8px">${man?'Orden de largada: clasificación más las sanciones cargadas a mano.':'Orden de largada según ESPN, con las penalizaciones aplicadas.'} Las flechas comparan con la clasificación. Puede cambiar hasta la largada.</div>`:'';
   const ab=VO===undefined?!!(en||s.k==='Q'||s.k==='R'):VO;
-  return`<details class="vivo"${ab?' open':''}><summary><span>${en?'<span class="pill" style="margin:0 6px 0 0">EN VIVO</span>':''}${tit}</span><span>${s.v.ord.length} pilotos</span></summary><div class="tb">${rows}</div>${nota}</details>`;
+  return`<details class="vivo"${ab?' open':''}><summary><span>${en?'<span class="pill" style="margin:0 6px 0 0">EN VIVO</span>':''}${tit}</span><span>${ord.length} pilotos</span></summary>${sanH}<div class="tb">${rows}</div>${nota}</details>`;
 }
 function live(){
   return fetch('https://site.api.espn.com/apis/site/v2/sports/racing/f1/scoreboard').then(r=>r.json()).then(j=>{
@@ -180,14 +208,56 @@ document.getElementById('favbar').addEventListener('click',e=>{
   if(e.target.closest('.fbtn')){panel=!panel;render()}
 });
 document.getElementById('main').addEventListener('toggle',e=>{if(e.target.classList&&e.target.classList.contains('vivo'))VO=e.target.open},true);
-document.getElementById('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b){tab=b.dataset.t;render()}});
+document.getElementById('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)irTab(b.dataset.t)});
 function cargar(){
   return fetch('data.json?'+Date.now()).then(r=>r.ok?r.json():Promise.reject()).then(d=>{
     const f=!D;D=d;document.getElementById('act').textContent='Horarios de Argentina · datos del '+new Date(d.actualizado).toLocaleString('es-AR',{timeZone:TZ,day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});
     if(f||tab==='inicio')render();
   }).catch(()=>{document.getElementById('act').textContent='No se pudieron cargar los datos'});
 }
-cargar();live();setInterval(live,30000);setInterval(()=>{if(tab==='inicio')render()},30000);setInterval(cargar,600000);
+function cargarPM(){return fetch('parrilla.json?'+Date.now()).then(r=>r.ok?r.json():null).then(j=>{PM=j&&typeof j==='object'?j:null;if(D&&tab==='inicio')render()}).catch(()=>{PM=null})}
+cargar();cargarPM();live();setInterval(cargarPM,300000);setInterval(live,30000);setInterval(()=>{if(tab==='inicio')render()},30000);setInterval(cargar,600000);
+
+/* ===== Deslizar para cambiar de pestaña (Inicio / Calendario / Posiciones) ===== */
+const ORD=['inicio','cal','pos'],MAIN=document.getElementById('main');
+const REDUCE=matchMedia('(prefers-reduced-motion:reduce)').matches;
+let animando=false;
+function irTab(t,dir){
+  if(t===tab||animando)return;
+  if(dir===undefined)dir=ORD.indexOf(t)>ORD.indexOf(tab)?1:-1;
+  if(REDUCE){tab=t;render();return}
+  animando=true;
+  MAIN.style.transition='transform .12s ease-in,opacity .12s ease-in';MAIN.style.transform=`translateX(${-dir*60}px)`;MAIN.style.opacity='0';
+  setTimeout(()=>{
+    MAIN.style.transition='none';MAIN.style.transform=`translateX(${dir*60}px)`;tab=t;render();
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      MAIN.style.transition='transform .2s ease-out,opacity .2s ease-out';MAIN.style.transform='';MAIN.style.opacity='';
+      setTimeout(()=>{MAIN.style.transition='';animando=false},220)}))},120);
+}
+(function(){
+  const NEST='table,select,input,textarea,[data-noswipe]';
+  let x0=0,y0=0,t0=0,on=false,lock=false,dx=0;
+  const reset=()=>{MAIN.style.transition='transform .18s,opacity .18s';MAIN.style.transform='';MAIN.style.opacity='';setTimeout(()=>{MAIN.style.transition=''},200)};
+  addEventListener('touchstart',e=>{
+    if(animando||e.touches.length!==1||(e.target.closest&&e.target.closest(NEST))){on=false;return}
+    const t=e.touches[0];x0=t.clientX;y0=t.clientY;t0=Date.now();on=true;lock=false;dx=0},{passive:true});
+  addEventListener('touchmove',e=>{
+    if(!on)return;const t=e.touches[0],mx=t.clientX-x0,my=t.clientY-y0;
+    if(!lock){
+      if(Math.abs(my)>12&&Math.abs(my)>Math.abs(mx)){on=false;return}
+      if(Math.abs(mx)>12&&Math.abs(mx)>Math.abs(my)*1.3)lock=true;else return}
+    dx=mx;if(REDUCE)return;
+    const i=ORD.indexOf(tab),edge=(dx>0&&i===0)||(dx<0&&i===ORD.length-1);
+    MAIN.style.transition='none';MAIN.style.transform=`translateX(${dx*(edge?.15:.5)}px)`;MAIN.style.opacity=String(1-Math.min(.4,Math.abs(dx)/450))},{passive:true});
+  addEventListener('touchend',()=>{
+    if(!on)return;on=false;if(!lock)return;lock=false;
+    const i=ORD.indexOf(tab),dir=dx<0?1:-1,ni=i+dir,vel=Math.abs(dx)/(Date.now()-t0+1);
+    const ok=(Math.abs(dx)>70||(Math.abs(dx)>35&&vel>.5))&&ni>=0&&ni<ORD.length;
+    if(!ok){reset();return}
+    MAIN.style.transform=`translateX(${dx*.5}px)`;
+    animando=false;irTab(ORD[ni],dir)});
+  addEventListener('touchcancel',()=>{if(on&&lock)reset();on=false;lock=false});
+})();
 </script>
 </body>
 </html>
